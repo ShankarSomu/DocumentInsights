@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+pandas
+python-multipart
+sentence-transformers
+python-docx
+openpyxl
+python-pptx
+pdfplumber
+python-dotenv
+faiss-cpu
+numpy
+ollama

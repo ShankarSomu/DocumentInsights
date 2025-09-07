@@ -1,0 +1,112 @@
+{
+  "user_vduz22idl": {
+    "Project Management Dataset.csv": {
+      "data_type": "projects",
+      "description": "Project management data",
+      "key_fields": [
+        {
+          "field": "Date",
+          "description": "Date information",
+          "sample_values": []
+        },
+        {
+          "field": "Level",
+          "description": "Level information",
+          "sample_values": []
+        },
+        {
+          "field": "Cost",
+          "description": "Cost information",
+          "sample_values": []
+        },
+        {
+          "field": "Item",
+          "description": "Item information",
+          "sample_values": []
+        },
+        {
+          "field": "Region",
+          "description": "Region information",
+          "sample_values": []
+        }
+      ],
+      "common_queries": [
+        "List all projects",
+        "Show projects details"
+      ],
+      "query_instructions": "Look for projects information in the data"
+    },
+    "employee_data_pyramid.csv": {
+      "data_type": "projects",
+      "description": "Project management data",
+      "key_fields": [
+        {
+          "field": "Score",
+          "description": "Score information",
+          "sample_values": []
+        },
+        {
+          "field": "Rating",
+          "description": "Rating information",
+          "sample_values": []
+        },
+        {
+          "field": "Assignment",
+          "description": "Assignment information",
+          "sample_values": []
+        },
+        {
+          "field": "Phone",
+          "description": "Phone information",
+          "sample_values": []
+        },
+        {
+          "field": "Id",
+          "description": "Id information",
+          "sample_values": []
+        }
+      ],
+      "common_queries": [
+        "List all projects",
+        "Show projects details"
+      ],
+      "query_instructions": "Look for projects information in the data"
+    },
+    "incident.csv": {
+      "data_type": "projects",
+      "description": "Project management data",
+      "key_fields": [
+        {
+          "field": "Assigned_Team",
+          "description": "Assigned_Team information",
+          "sample_values": []
+        },
+        {
+          "field": "Project_Name",
+          "description": "Project_Name information",
+          "sample_values": []
+        },
+        {
+          "field": "Number",
+          "description": "Number information",
+          "sample_values": []
+        },
+        {
+          "field": "06",
+          "description": "06 information",
+          "sample_values": []
+        },
+        {
+          "field": "Requestor",
+          "description": "Requestor information",
+          "sample_values": []
+        }
+      ],
+      "common_queries": [
+        "List all projects",
+        "Show projects details"
+      ],
+      "query_instructions": "Look for projects information in the data"
+    }
+  }
+}

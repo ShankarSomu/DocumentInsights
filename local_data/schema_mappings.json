@@ -1,0 +1,310 @@
+{
+  "aa45a7d4e40c4626793ccec4d98d6c48": {
+    "mappings": {
+      "Project Name": {
+        "canonical_field": "project_name",
+        "transformation": "rename",
+        "transformation_rule": "Direct mapping with name normalization"
+      },
+      "Project Description": {
+        "canonical_field": "project_description",
+        "transformation": "rename",
+        "transformation_rule": "Direct mapping with name normalization"
+      },
+      "Project Type": {
+        "canonical_field": "project_type",
+        "transformation": "rename",
+        "transformation_rule": "Direct mapping with name normalization"
+      },
+      "Project Manager": {
+        "canonical_field": "project_manager",
+        "transformation": "rename",
+        "transformation_rule": "Direct mapping with name normalization"
+      },
+      "Region": {
+        "canonical_field": "region",
+        "transformation": "rename",
+        "transformation_rule": "Direct mapping with name normalization"
+      },
+      "Department": {
+        "canonical_field": "department",
+        "transformation": "rename",
+        "transformation_rule": "Direct mapping with name normalization"
+      },
+      "Project Cost": {
+        "canonical_field": "project_cost",
+        "transformation": "rename",
+        "transformation_rule": "Direct mapping with name normalization"
+      },
+      "Project Benefit": {
+        "canonical_field": "project_benefit",
+        "transformation": "rename",
+        "transformation_rule": "Direct mapping with name normalization"
+      },
+      "Complexity": {
+        "canonical_field": "complexity",
+        "transformation": "rename",
+        "transformation_rule": "Direct mapping with name normalization"
+      },
+      "Status": {
+        "canonical_field": "status",
+        "transformation": "rename",
+        "transformation_rule": "Direct mapping with name normalization"
+      },
+      "Completion%": {
+        "canonical_field": "completion%",
+        "transformation": "rename",
+        "transformation_rule": "Direct mapping with name normalization"
+      },
+      "Phase": {
+        "canonical_field": "phase",
+        "transformation": "rename",
+        "transformation_rule": "Direct mapping with name normalization"
+      },
+      "Year": {
+        "canonical_field": "year",
+        "transformation": "rename",
+        "transformation_rule": "Direct mapping with name normalization"
+      },
+      "Month": {
+        "canonical_field": "month",
+        "transformation": "rename",
+        "transformation_rule": "Direct mapping with name normalization"
+      },
+      "Start Date": {
+        "canonical_field": "start_date",
+        "transformation": "rename",
+        "transformation_rule": "Direct mapping with name normalization"
+      },
+      "End Date": {
+        "canonical_field": "end_date",
+        "transformation": "rename",
+        "transformation_rule": "Direct mapping with name normalization"
+      },
+      "Detailed Milestones": {
+        "canonical_field": "detailed_milestones",
+        "transformation": "rename",
+        "transformation_rule": "Direct mapping with name normalization"
+      },
+      "Current Deliverable": {
+        "canonical_field": "current_deliverable",
+        "transformation": "rename",
+        "transformation_rule": "Direct mapping with name normalization"
+      },
+      "Dependencies": {
+        "canonical_field": "dependencies",
+        "transformation": "rename",
+        "transformation_rule": "Direct mapping with name normalization"
+      },
+      "Key Risks": {
+        "canonical_field": "key_risks",
+        "transformation": "rename",
+        "transformation_rule": "Direct mapping with name normalization"
+      },
+      "Planned Cost": {
+        "canonical_field": "planned_cost",
+        "transformation": "rename",
+        "transformation_rule": "Direct mapping with name normalization"
+      },
+      "Actual Cost": {
+        "canonical_field": "actual_cost",
+        "transformation": "rename",
+        "transformation_rule": "Direct mapping with name normalization"
+      },
+      "Cost Variance": {
+        "canonical_field": "cost_variance",
+        "transformation": "rename",
+        "transformation_rule": "Direct mapping with name normalization"
+      },
+      "Planned End Date": {
+        "canonical_field": "planned_end_date",
+        "transformation": "rename",
+        "transformation_rule": "Direct mapping with name normalization"
+      },
+      "Actual End Date": {
+        "canonical_field": "actual_end_date",
+        "transformation": "rename",
+        "transformation_rule": "Direct mapping with name normalization"
+      },
+      "Time Variance Days": {
+        "canonical_field": "time_variance_days",
+        "transformation": "rename",
+        "transformation_rule": "Direct mapping with name normalization"
+      },
+      "Priority Level": {
+        "canonical_field": "priority_level",
+        "transformation": "rename",
+        "transformation_rule": "Direct mapping with name normalization"
+      },
+      "Business Value Score": {
+        "canonical_field": "business_value_score",
+        "transformation": "rename",
+        "transformation_rule": "Direct mapping with name normalization"
+      },
+      "Critical Path Item": {
+        "canonical_field": "critical_path_item",
+        "transformation": "rename",
+        "transformation_rule": "Direct mapping with name normalization"
+      }
+    },
+    "new_canonical_fields": {},
+    "ignored_columns": [],
+    "confidence": 0.5,
+    "file_name": "Project Management Dataset.csv",
+    "fallback": true
+  },
+  "34b5eaffd243047992c9d0389b3cd256": {
+    "mappings": {
+      "Employee ID": {
+        "canonical_field": "employee_id",
+        "transformation": "rename"
+      },
+      "Employee Name": {
+        "canonical_field": "employee_name",
+        "transformation": "rename"
+      },
+      "Manager Name": {
+        "canonical_field": "manager",
+        "transformation": "rename"
+      },
+      "Project ID": {
+        "canonical_field": "department",
+        "transformation": "rename"
+      },
+      "Designation": {
+        "canonical_field": "role",
+        "transformation": "rename"
+      },
+      "Project Name": {
+        "canonical_field": "department",
+        "transformation": "rename"
+      },
+      "Primary Skills": {
+        "canonical_field": "skills",
+        "transformation": "rename"
+      },
+      "Secondary Skills": {
+        "canonical_field": "skills",
+        "transformation": "rename"
+      },
+      "Availability (%)": {
+        "canonical_field": "capacity",
+        "transformation": "rename, convert_type"
+      },
+      "Current Capacity": {
+        "canonical_field": "capacity",
+        "transformation": "rename, convert_type"
+      },
+      "Productivity Rating": {
+        "canonical_field": "productivity",
+        "transformation": "rename, convert_type"
+      },
+      "Efficiency Score": {
+        "canonical_field": "productivity",
+        "transformation": "rename, convert_type"
+      },
+      "Email": {
+        "canonical_field": "email",
+        "transformation": "rename"
+      },
+      "Phone": {
+        "canonical_field": "phone",
+        "transformation": "rename"
+      },
+      "Team Assignment": {
+        "canonical_field": "department",
+        "transformation": "rename"
+      },
+      "Location": {
+        "canonical_field": "location",
+        "transformation": "rename"
+      }
+    },
+    "new_canonical_fields": {
+      "project_id": {
+        "type": "string",
+        "description": "Unique project identifier"
+      },
+      "phone": {
+        "type": "string",
+        "description": "Employee phone number"
+      }
+    },
+    "ignored_columns": [],
+    "confidence": 0.85,
+    "file_name": "employee_data_pyramid.csv",
+    "domain": "employees",
+    "cache_key": "34b5eaffd243047992c9d0389b3cd256"
+  },
+  "ecb69355eba95d001c27332eae379104": {
+    "mappings": {
+      "number": {
+        "canonical_field": "incident_id",
+        "transformation": "rename"
+      },
+      "opened_at": {
+        "canonical_field": "created_date",
+        "transformation": "rename"
+      },
+      "closed_at": {
+        "canonical_field": "resolved_date",
+        "transformation": "rename"
+      },
+      "short_description": {
+        "canonical_field": "title",
+        "transformation": "rename"
+      },
+      "project_name": {
+        "canonical_field": "project_id",
+        "transformation": "rename"
+      },
+      "status": {
+        "canonical_field": "status",
+        "transformation": "rename"
+      },
+      "requestor": {
+        "canonical_field": "assignee",
+        "transformation": "rename"
+      },
+      "assigned_team": {
+        "canonical_field": "assignee",
+        "transformation": "rename"
+      },
+      "severity_priority": {
+        "canonical_field": "severity",
+        "transformation": "split"
+      },
+      "root_cause_category": {
+        "canonical_field": "category",
+        "transformation": "rename"
+      },
+      "resolution_notes": {
+        "canonical_field": "title",
+        "transformation": "combine"
+      },
+      "reassignment_history": {
+        "canonical_field": "assignee",
+        "transformation": "combine"
+      },
+      "customer_feedback_score": {
+        "canonical_field": "customer_feedback_score",
+        "transformation": "rename"
+      }
+    },
+    "new_canonical_fields": {
+      "severity_priority": {
+        "type": "string",
+        "description": "Severity level"
+      },
+      "reassignment_history": {
+        "type": "string",
+        "description": "Reassignment history"
+      }
+    },
+    "ignored_columns": [],
+    "confidence": 0.85,
+    "file_name": "incident.csv",
+    "domain": "incidents",
+    "cache_key": "ecb69355eba95d001c27332eae379104"
+  }
+}

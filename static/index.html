@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProjectIQ - AI Assistant</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism.min.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; height: 100vh; display: flex; flex-direction: column; }
+        .header {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+        .header h1 { color: #2d3748; font-size: 2rem; margin-bottom: 5px; }
+        .header p { color: #718096; font-size: 1rem; }
+        .main-content {
+            display: flex;
+            gap: 20px;
+            flex: 1;
+            min-height: 0;
+        }
+        .sidebar {
+            width: 300px;
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+        .chat-container {
+            flex: 1;
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+        .upload-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+        .tab {
+            padding: 8px 12px;
+            border: none;
+            background: #f7fafc;
+            cursor: pointer;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+        .tab.active { background: #4299e1; color: white; }
+        .tab:hover { background: #e2e8f0; }
+        .tab.active:hover { background: #3182ce; }
+        .upload-content { display: none; }
+        .upload-content.active { display: block; }
+        .file-input, .url-input {
+            width: 100%;
+            padding: 10px;
+            border: 2px dashed #cbd5e0;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            background: #f7fafc;
+        }
+        .upload-btn {
+            width: 100%;
+            padding: 10px;
+            background: #48bb78;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .upload-btn:hover { background: #38a169; }
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .message {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+        .user-message {
+            flex-direction: row-reverse;
+        }
+        .message-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+        .user-message .message-avatar {
+            background: #4299e1;
+            color: white;
+        }
+        .bot-message .message-avatar {
+            background: #48bb78;
+            color: white;
+        }
+        .message-content {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            line-height: 1.5;
+            font-size: 0.95rem;
+        }
+        .user-message .message-content {
+            background: #4299e1;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+        .bot-message .message-content {
+            background: #f7fafc;
+            color: #2d3748;
+            border-bottom-left-radius: 4px;
+            border: 1px solid #e2e8f0;
+        }
+        .message-content h1, .message-content h2, .message-content h3 {
+            margin: 8px 0 4px 0;
+            color: inherit;
+        }
+        .message-content ul, .message-content ol {
+            margin: 8px 0;
+            padding-left: 20px;
+        }
+        .message-content li {
+            margin: 8px 0;
+        }
+        .message-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 14px;
+            background: white;
+        }
+        .message-content table th,
+        .message-content table td {
+            border: 1px solid #e2e8f0;
+            padding: 8px 12px;
+            text-align: left;
+        }
+        .message-content table th {
+            background-color: #f7fafc;
+            font-weight: 600;
+            color: #2d3748;
+        }
+        .message-content table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .message-content details {
+            margin: 15px 0;
+            padding: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background-color: #f7fafc;
+        }
+        .message-content summary {
+            cursor: pointer;
+            font-weight: 600;
+            padding: 5px;
+            color: #4a5568;
+        }
+        .message-content summary:hover {
+            color: #2d3748;
+        }
+        .message-content code {
+            background: rgba(0,0,0,0.1);
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+        .message-content pre {
+            background: rgba(0,0,0,0.05);
+            padding: 12px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 8px 0;
+        }
+        .input-section {
+            padding: 20px;
+            border-top: 1px solid #e2e8f0;
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+        .message-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            resize: none;
+            min-height: 44px;
+            max-height: 120px;
+            font-family: inherit;
+        }
+        .message-input:focus {
+            outline: none;
+            border-color: #4299e1;
+        }
+        .send-btn {
+            width: 44px;
+            height: 44px;
+            background: #4299e1;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        .send-btn:hover { background: #3182ce; }
+        .send-btn:disabled { background: #a0aec0; cursor: not-allowed; }
+        .status {
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 8px;
+            font-size: 0.875rem;
+        }
+        .success {
+            background: #c6f6d5;
+            color: #22543d;
+            border: 1px solid #9ae6b4;
+        }
+        .error {
+            background: #fed7d7;
+            color: #742a2a;
+            border: 1px solid #fc8181;
+        }
+        .typing-indicator {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            color: #718096;
+            font-style: italic;
+        }
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+        }
+        .typing-dots span {
+            width: 6px;
+            height: 6px;
+            background: #cbd5e0;
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+        .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-10px); }
+        }
+        .upload-progress {
+            padding: 15px;
+            background: #f7fafc;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+        .upload-progress h4 {
+            margin-bottom: 10px;
+            color: #2d3748;
+        }
+        .file-progress {
+            padding: 5px 0;
+            font-size: 0.9rem;
+            color: #4a5568;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #48bb78, #38a169);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        @media (max-width: 768px) {
+            .main-content { flex-direction: column; }
+            .sidebar { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-robot"></i> ProjectIQ</h1>
+            <p>AI-Powered Project Management Assistant</p>
+        </div>
+        
+        <div class="main-content">
+            <div class="sidebar">
+                <h3 style="margin-bottom: 15px; color: #2d3748;"><i class="fas fa-upload"></i> Upload Files</h3>
+                
+                <div class="upload-tabs">
+                    <div class="tab active" onclick="switchTab('local')"><i class="fas fa-file"></i> Local</div>
+                    <div class="tab" onclick="switchTab('onedrive')"><i class="fab fa-microsoft"></i> OneDrive</div>
+                    <div class="tab" onclick="switchTab('gdrive')"><i class="fab fa-google-drive"></i> Drive</div>
+                </div>
+                
+                <div id="local" class="upload-content active">
+                    <input type="file" id="fileInput" class="file-input" accept=".csv,.json,.xml,.txt,.doc,.docx,.ppt,.pptx,.pdf,.xls,.xlsx" multiple>
+                    <button class="upload-btn" onclick="uploadFile()"><i class="fas fa-cloud-upload-alt"></i> Upload Files</button>
+                </div>
+                
+                <div id="onedrive" class="upload-content">
+                    <input type="url" id="onedriveUrl" class="url-input" placeholder="Paste OneDrive share URL...">
+                    <button class="upload-btn" onclick="uploadFromUrl('onedrive')"><i class="fab fa-microsoft"></i> Upload from OneDrive</button>
+                </div>
+                
+                <div id="gdrive" class="upload-content">
+                    <input type="url" id="gdriveUrl" class="url-input" placeholder="Paste Google Drive share URL...">
+                    <button class="upload-btn" onclick="uploadFromUrl('gdrive')"><i class="fab fa-google-drive"></i> Upload from Drive</button>
+                </div>
+                
+                <div id="status"></div>
+                
+                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+                    <h4 style="color: #4a5568; margin-bottom: 10px;"><i class="fas fa-file-alt"></i> Uploaded Files</h4>
+                    <div id="fileList" style="font-size: 0.85rem; color: #718096; line-height: 1.4; max-height: 150px; overflow-y: auto;">
+                        <div style="color: #a0aec0; font-style: italic;">No files uploaded yet</div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e2e8f0;">
+                    <button onclick="startNewSession()" style="width: 100%; background: #e53e3e; color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; margin-bottom: 15px;">
+                        <i class="fas fa-refresh"></i> Start New Session
+                    </button>
+                    
+                    <h4 style="color: #4a5568; margin-bottom: 10px;"><i class="fas fa-info-circle"></i> Supported Formats</h4>
+                    <div style="font-size: 0.8rem; color: #718096; line-height: 1.4;">
+                        CSV, JSON, XML, TXT, DOC, DOCX, PPT, PPTX, PDF, XLS, XLSX
+                    </div>
+                </div>
+            </div>
+            
+            <div class="chat-container">
+                <div class="chat-messages" id="chatMessages"></div>
+                
+                <div class="typing-indicator" id="typingIndicator">
+                    <div class="message-avatar"><i class="fas fa-robot"></i></div>
+                    <div>AI is thinking</div>
+                    <div class="typing-dots">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </div>
+                
+                <div class="input-section">
+                    <div class="input-group">
+                        <textarea id="messageInput" class="message-input" placeholder="Ask me anything about your project data..." onkeypress="handleKeyPress(event)" rows="1"></textarea>
+                        <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Generate new session ID on each page load (no persistence)
+        let userId = generateUserId();
+        console.log('New session - User ID:', userId);
+        
+        // Clear any old file list since this is a new session
+        let uploadedFiles = [];
+        updateFileList();
+        
+        // Show session info to user
+        addMessage('🆕 **New Session Started**\n\nSession ID: `' + userId.substring(0, 8) + '...`\n\nUpload your files to get started!', 'bot');
+
+        function generateUserId() {
+            return 'user_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.upload-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+        }
+
+        function showStatus(message, type) {
+            const status = document.getElementById('status');
+            status.innerHTML = `<div class="${type}">${message}</div>`;
+            setTimeout(() => status.innerHTML = '', 5000);
+        }
+
+        async function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            const files = Array.from(fileInput.files);
+            
+            if (files.length === 0) {
+                showStatus('Please select at least one file', 'error');
+                return;
+            }
+
+            // Show progress
+            showUploadProgress(files.length);
+            
+            // Upload files in parallel
+            const uploadPromises = files.map((file, index) => uploadSingleFile(file, index, files.length));
+            
+            try {
+                const results = await Promise.all(uploadPromises);
+                
+                const successCount = results.filter(r => r.success).length;
+                const totalChunks = results.reduce((sum, r) => sum + (r.chunks || 0), 0);
+                
+                hideUploadProgress();
+                
+                if (successCount > 0) {
+                    showStatus(`Successfully uploaded ${successCount}/${files.length} file(s)! ${totalChunks} chunks created.`, 'success');
+                    fileInput.value = '';
+                    updateFileList();
+                } else {
+                    showStatus('All uploads failed. Please try again.', 'error');
+                }
+                
+            } catch (error) {
+                hideUploadProgress();
+                showStatus(`Upload error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function uploadSingleFile(file, index, total) {
+            updateFileProgress(index, file.name, 'uploading');
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('user_id', userId);
+
+            try {
+                const response = await fetch('/upload-csv', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    updateFileProgress(index, file.name, 'completed');
+                    
+                    // Add file to session files list
+                    const fileInfo = {
+                        name: file.name,
+                        size: formatFileSize(file.size),
+                        uploadTime: new Date().toLocaleString(),
+                        chunks: result.chunks_created
+                    };
+                    uploadedFiles.push(fileInfo);
+                    
+                    return { success: true, chunks: result.chunks_created };
+                } else {
+                    updateFileProgress(index, file.name, 'failed');
+                    return { success: false, error: result.detail };
+                }
+            } catch (error) {
+                updateFileProgress(index, file.name, 'failed');
+                return { success: false, error: error.message };
+            }
+        }
+        
+        function showUploadProgress(fileCount) {
+            const status = document.getElementById('status');
+            status.innerHTML = `
+                <div class="upload-progress">
+                    <h4>Uploading ${fileCount} file(s)...</h4>
+                    <div id="progressContainer"></div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function updateFileProgress(index, fileName, status) {
+            const container = document.getElementById('progressContainer');
+            if (!container) return;
+            
+            let fileDiv = document.getElementById(`file-${index}`);
+            if (!fileDiv) {
+                fileDiv = document.createElement('div');
+                fileDiv.id = `file-${index}`;
+                fileDiv.className = 'file-progress';
+                container.appendChild(fileDiv);
+            }
+            
+            const statusIcon = {
+                'uploading': '⏳',
+                'completed': '✅',
+                'failed': '❌'
+            };
+            
+            fileDiv.innerHTML = `${statusIcon[status]} ${fileName}`;
+            
+            // Update overall progress
+            const allFiles = container.children.length;
+            const completedFiles = container.querySelectorAll('.file-progress').length;
+            const progressPercent = (completedFiles / allFiles) * 100;
+            
+            const progressFill = document.getElementById('progressFill');
+            if (progressFill) {
+                progressFill.style.width = `${progressPercent}%`;
+            }
+        }
+        
+        function hideUploadProgress() {
+            setTimeout(() => {
+                const status = document.getElementById('status');
+                status.innerHTML = '';
+            }, 2000);
+        }
+
+        async function uploadFromUrl(source) {
+            const urlInput = document.getElementById(source + 'Url');
+            const url = urlInput.value.trim();
+            
+            if (!url) {
+                showStatus('Please enter a URL', 'error');
+                return;
+            }
+
+            try {
+                const downloadUrl = convertToDownloadUrl(url, source);
+                
+                const response = await fetch(downloadUrl);
+                const blob = await response.blob();
+                
+                const formData = new FormData();
+                formData.append('file', blob, 'uploaded_file.csv');
+                formData.append('user_id', userId);
+
+                const uploadResponse = await fetch('/upload-csv', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await uploadResponse.json();
+                
+                if (uploadResponse.ok) {
+                    showStatus(`File uploaded successfully! ${result.chunks_created} chunks created.`, 'success');
+                    urlInput.value = '';
+                } else {
+                    showStatus(result.detail || 'Upload failed', 'error');
+                }
+            } catch (error) {
+                showStatus('Upload failed: ' + error.message, 'error');
+            }
+        }
+
+        function convertToDownloadUrl(url, source) {
+            if (source === 'onedrive') {
+                return url.replace('?e=', '&download=1&e=');
+            } else if (source === 'gdrive') {
+                const fileId = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
+                return fileId ? `https://drive.google.com/uc?export=download&id=${fileId[1]}` : url;
+            }
+            return url;
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+
+            // Disable send button and show typing
+            const sendBtn = document.getElementById('sendBtn');
+            const typingIndicator = document.getElementById('typingIndicator');
+            
+            sendBtn.disabled = true;
+            addMessage(message, 'user');
+            input.value = '';
+            input.style.height = 'auto';
+            
+            // Show typing indicator
+            typingIndicator.style.display = 'flex';
+            
+            console.log('Sending chat request with user_id:', userId);
+
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        user_id: userId,
+                        question: message
+                    })
+                });
+
+                const result = await response.json();
+                
+                // Hide typing indicator
+                typingIndicator.style.display = 'none';
+                
+                if (response.ok) {
+                    // Simulate typing effect for bot response
+                    await typeMessage(result.answer, 'bot');
+                } else {
+                    addMessage('❌ **Error**: ' + (result.detail || 'Failed to get response'), 'bot');
+                }
+            } catch (error) {
+                typingIndicator.style.display = 'none';
+                addMessage('❌ **Connection Error**: ' + error.message, 'bot');
+            } finally {
+                sendBtn.disabled = false;
+            }
+        }
+        
+        async function typeMessage(content, sender) {
+            const messagesContainer = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}-message`;
+            
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            avatar.innerHTML = '<i class="fas fa-robot"></i>';
+            
+            const messageContent = document.createElement('div');
+            messageContent.className = 'message-content';
+            
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(messageContent);
+            messagesContainer.appendChild(messageDiv);
+            
+            // Type effect
+            const formattedContent = formatBotMessage(content);
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = formattedContent;
+            const textContent = tempDiv.textContent || tempDiv.innerText;
+            
+            let i = 0;
+            const typeSpeed = 20; // milliseconds per character
+            
+            function typeChar() {
+                if (i < textContent.length) {
+                    const partialText = textContent.substring(0, i + 1);
+                    messageContent.innerHTML = formatBotMessage(partialText);
+                    i++;
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                    setTimeout(typeChar, typeSpeed);
+                } else {
+                    messageContent.innerHTML = formattedContent;
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                }
+            }
+            
+            typeChar();
+        }
+
+        function addMessage(content, sender) {
+            const messagesContainer = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}-message`;
+            
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            avatar.innerHTML = sender === 'user' ? '<i class="fas fa-user"></i>' : '<i class="fas fa-robot"></i>';
+            
+            const messageContent = document.createElement('div');
+            messageContent.className = 'message-content';
+            
+            if (sender === 'bot') {
+                // Format bot messages with markdown-like styling
+                messageContent.innerHTML = formatBotMessage(content);
+            } else {
+                messageContent.textContent = content;
+            }
+            
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(messageContent);
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+        
+        function formatBotMessage(content) {
+            // Convert markdown-like formatting to HTML
+            let formatted = content
+                // Headers
+                .replace(/^### (.*$)/gm, '<h3>$1</h3>')
+                .replace(/^## (.*$)/gm, '<h2>$1</h2>')
+                .replace(/^# (.*$)/gm, '<h1>$1</h1>')
+                // Bold
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                // Italic
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                // Code blocks
+                .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+                // Inline code
+                .replace(/`([^`]+)`/g, '<code>$1</code>')
+                // Tables (markdown format)
+                .replace(/(\|.*\|\n)(\|.*\|\n)((?:\|.*\|\n?)*)/g, function(match, header, separator, rows) {
+                    const headerCells = header.split('|').slice(1, -1).map(cell => `<th>${cell.trim()}</th>`).join('');
+                    const rowCells = rows.split('\n').filter(row => row.trim()).map(row => {
+                        const cells = row.split('|').slice(1, -1).map(cell => `<td>${cell.trim()}</td>`).join('');
+                        return `<tr>${cells}</tr>`;
+                    }).join('');
+                    return `<table><thead><tr>${headerCells}</tr></thead><tbody>${rowCells}</tbody></table>`;
+                })
+                // Details/Summary (collapsible sections)
+                .replace(/<details>([\s\S]*?)<\/details>/g, function(match, content) {
+                    return match; // Keep as-is, already HTML
+                })
+                // Lists (bullet points)
+                .replace(/^[•\-\*] (.*)$/gm, '<li>$1</li>')
+                // Line breaks
+                .replace(/\n/g, '<br>');
+            
+            // Wrap consecutive <li> elements in <ul>
+            formatted = formatted.replace(/(<li>.*?<\/li>(?:<br>)*)+/gs, function(match) {
+                return '<ul>' + match.replace(/<br>/g, '') + '</ul>';
+            });
+            
+            // Clean up extra <br> tags around block elements
+            formatted = formatted.replace(/<br>\s*(<\/?(table|ul|ol|h[1-6]|div|details))/g, '$1');
+            formatted = formatted.replace(/(<\/?(table|ul|ol|h[1-6]|div|details)[^>]*>)\s*<br>/g, '$1');
+            
+            return formatted;
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+        
+        // Auto-resize textarea
+        document.getElementById('messageInput').addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+        });
+        
+        function updateFileList() {
+            const fileListDiv = document.getElementById('fileList');
+            
+            if (uploadedFiles.length === 0) {
+                fileListDiv.innerHTML = '<div style="color: #a0aec0; font-style: italic;">No files uploaded yet</div>';
+                return;
+            }
+            
+            const fileItems = uploadedFiles.map(file => `
+                <div style="padding: 8px; margin: 4px 0; background: #f7fafc; border-radius: 6px; border-left: 3px solid #48bb78;">
+                    <div style="font-weight: 500; color: #2d3748;">
+                        <i class="fas fa-file"></i> ${file.name}
+                    </div>
+                    <div style="font-size: 0.75rem; color: #718096; margin-top: 2px;">
+                        ${file.size} • ${file.chunks} chunks • ${file.uploadTime}
+                    </div>
+                </div>
+            `).join('');
+            
+            fileListDiv.innerHTML = fileItems + `
+                <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid #e2e8f0; text-align: center;">
+                    <button onclick="clearFileList()" style="background: #e53e3e; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; cursor: pointer;">
+                        <i class="fas fa-trash"></i> Clear All
+                    </button>
+                </div>
+            `;
+        }
+        
+        function clearFileList() {
+            if (confirm('Are you sure you want to clear the file list? This will not delete the actual data.')) {
+                uploadedFiles = [];
+                updateFileList();
+            }
+        }
+        
+        function startNewSession() {
+            if (confirm('Start a new session? This will clear all uploaded files and chat history.')) {
+                location.reload();
+            }
+        }
+        
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        }
+
+        // Session info is now shown above instead of welcome message
+    </script>
+</body>
+</html>

@@ -1,0 +1,154 @@
+{
+  "projects": {
+    "fields": {
+      "project_id": {
+        "type": "string",
+        "description": "Unique project identifier"
+      },
+      "project_name": {
+        "type": "string",
+        "description": "Project name or title"
+      },
+      "status": {
+        "type": "string",
+        "description": "Project status (active, completed, etc.)"
+      },
+      "priority": {
+        "type": "string",
+        "description": "Project priority level"
+      },
+      "risk_level": {
+        "type": "string",
+        "description": "Risk assessment level"
+      },
+      "start_date": {
+        "type": "date",
+        "description": "Project start date"
+      },
+      "end_date": {
+        "type": "date",
+        "description": "Project end date"
+      },
+      "budget": {
+        "type": "float",
+        "description": "Project budget amount"
+      },
+      "manager": {
+        "type": "string",
+        "description": "Project manager name"
+      },
+      "department": {
+        "type": "string",
+        "description": "Department or team"
+      },
+      "completion_percentage": {
+        "type": "float",
+        "description": "Completion percentage"
+      }
+    }
+  },
+  "employees": {
+    "fields": {
+      "employee_id": {
+        "type": "string",
+        "description": "Unique employee identifier"
+      },
+      "employee_name": {
+        "type": "string",
+        "description": "Employee full name"
+      },
+      "email": {
+        "type": "string",
+        "description": "Employee email address"
+      },
+      "department": {
+        "type": "string",
+        "description": "Department or team"
+      },
+      "role": {
+        "type": "string",
+        "description": "Job title or role"
+      },
+      "manager": {
+        "type": "string",
+        "description": "Manager name"
+      },
+      "skills": {
+        "type": "string",
+        "description": "Employee skills"
+      },
+      "capacity": {
+        "type": "float",
+        "description": "Work capacity percentage"
+      },
+      "productivity": {
+        "type": "float",
+        "description": "Productivity rating"
+      },
+      "location": {
+        "type": "string",
+        "description": "Work location"
+      },
+      "project_id": {
+        "type": "string",
+        "description": "Unique project identifier"
+      },
+      "phone": {
+        "type": "string",
+        "description": "Employee phone number"
+      }
+    }
+  },
+  "incidents": {
+    "fields": {
+      "incident_id": {
+        "type": "string",
+        "description": "Unique incident identifier"
+      },
+      "title": {
+        "type": "string",
+        "description": "Incident title or description"
+      },
+      "status": {
+        "type": "string",
+        "description": "Incident status"
+      },
+      "severity": {
+        "type": "string",
+        "description": "Severity level"
+      },
+      "priority": {
+        "type": "string",
+        "description": "Priority level"
+      },
+      "created_date": {
+        "type": "date",
+        "description": "Incident creation date"
+      },
+      "resolved_date": {
+        "type": "date",
+        "description": "Resolution date"
+      },
+      "assignee": {
+        "type": "string",
+        "description": "Assigned person"
+      },
+      "project_id": {
+        "type": "string",
+        "description": "Related project"
+      },
+      "category": {
+        "type": "string",
+        "description": "Incident category"
+      },
+      "severity_priority": {
+        "type": "string",
+        "description": "Severity level"
+      },
+      "reassignment_history": {
+        "type": "string",
+        "description": "Reassignment history"
+      }
+    }
+  }
+}
