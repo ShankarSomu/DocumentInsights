@@ -92,7 +92,7 @@ Return only: SEMANTIC or STRUCTURED"""
             )
         
         # LLM generates SQL query
-        sql_query = self._llm_generate_sql(question, schema_info)
+        sql_query = self._llm_generate_sql(question, schema_info, user_id)
         
         if not sql_query:
             return ChatResponse(
@@ -100,48 +100,51 @@ Return only: SEMANTIC or STRUCTURED"""
                 sources=[]
             )
         
-        # Execute SQL with retry logic
-        max_retries = 3
-        for attempt in range(max_retries):
+        # Try the generated SQL first
+        try:
+            conn = sqlite3.connect(self.db_path)
+            result_df = pd.read_sql_query(sql_query, conn)
+            conn.close()
+            
+            # Format results
+            formatted_answer = self._llm_format_results(question, result_df, sql_query)
+            
+            return ChatResponse(
+                answer=formatted_answer,
+                sources=self._extract_table_sources(schema_info)
+            )
+            
+        except Exception as e:
+            print(f"SQL execution failed: {e}")
+            
+            # For prediction queries, use simple fallback immediately
+            if 'predict' in question.lower() or 'completion' in question.lower():
+                print("Using simple prediction fallback")
+                return self._generate_simple_prediction(user_id)
+            
+            # For other queries, try one simple fix
             try:
-                conn = sqlite3.connect(self.db_path)
-                result_df = pd.read_sql_query(sql_query, conn)
-                conn.close()
-                
-                # Format results
-                formatted_answer = self._llm_format_results(question, result_df, sql_query)
-                
-                # Validate if query was properly answered
-                validation_result = self._llm_validate_answer(question, formatted_answer, result_df)
-                
-                if not validation_result['is_valid']:
-                    print(f"Answer validation failed: {validation_result['reason']}")
-                    # Try to fix the query
-                    corrected_answer = self._llm_correct_answer(question, result_df, validation_result['reason'])
-                    formatted_answer = corrected_answer
-                
-                return ChatResponse(
-                    answer=formatted_answer,
-                    sources=self._extract_table_sources(schema_info)
-                )
-                
-            except Exception as e:
-                print(f"SQL attempt {attempt + 1} failed: {e}")
-                
-                if attempt < max_retries - 1:
-                    # Get fresh metadata and data for LLM to analyze
-                    fresh_metadata = self._get_fresh_table_metadata(user_id)
-                    sample_data = self._get_sample_data(user_id)
+                # Generate a basic query without complex logic
+                tables = self._get_user_tables(user_id)
+                if tables:
+                    simple_sql = f"SELECT * FROM {tables[0]} LIMIT 20;"
+                    conn = sqlite3.connect(self.db_path)
+                    result_df = pd.read_sql_query(simple_sql, conn)
+                    conn.close()
                     
-                    # Let LLM analyze and generate new query
-                    sql_query = self._llm_analyze_and_fix(question, str(e), fresh_metadata, sample_data)
-                    print(f"LLM generated new query: {sql_query}")
-                else:
-                    # Final fallback - simple prediction query
-                    if 'predict' in question.lower() and 'completion' in question.lower():
-                        return self._generate_simple_prediction(user_id)
-                    else:
-                        return self._llm_fallback_analysis(question, user_id, str(e))
+                    formatted_answer = self._llm_format_results(question, result_df, simple_sql)
+                    return ChatResponse(
+                        answer=f"**Note: Showing sample data due to query complexity**\n\n{formatted_answer}",
+                        sources=self._extract_table_sources(schema_info)
+                    )
+            except:
+                pass
+            
+            # Final fallback
+            return ChatResponse(
+                answer=f"Unable to execute query. Error: {str(e)}",
+                sources=[]
+            )
     
     def _llm_semantic_processing(self, question: str, user_id: str) -> ChatResponse:
         """LLM processes semantic queries using vector search"""
@@ -196,32 +199,59 @@ Return only: SEMANTIC or STRUCTURED"""
         for file_name, file_chunks in files_data.items():
             overview += f"**{file_name}**\n"
             
-            # Get sample content to understand data type
-            sample_content = ' '.join(file_chunks[:3])[:500]
+            # LLM analyzes content type
+            sample_content = ' '.join(file_chunks[:2])[:300]
             
-            if 'project' in sample_content.lower():
-                overview += "- Contains project management data\n"
-            elif 'employee' in sample_content.lower():
-                overview += "- Contains employee/staff data\n"
-            elif 'incident' in sample_content.lower():
-                overview += "- Contains incident/issue data\n"
-            else:
+            try:
+                response = self.groq_client.chat.completions.create(
+                    model="llama-3.1-8b-instant",
+                    messages=[
+                        {"role": "system", "content": "Describe data type in one brief line."},
+                        {"role": "user", "content": f"What type of data is this: {sample_content}"}
+                    ],
+                    max_tokens=30,
+                    temperature=0.1
+                )
+                
+                description = response.choices[0].message.content.strip()
+                overview += f"- {description}\n"
+            except:
                 overview += "- Contains structured data\n"
             
             overview += f"- {len(file_chunks)} data chunks\n\n"
         
-        overview += "**Try asking:**\n"
-        overview += "• List all projects\n"
-        overview += "• Show me employee information\n"
-        overview += "• What incidents do we have?\n"
-        overview += "• Summarize the data\n"
+        # Generate suggestions based on actual data using LLM
+        data_summary = "\n".join([f"{file}: {', '.join(chunks[:3])}" for file, chunks in files_data.items()])
+        
+        suggestions_prompt = f"""Based on this data:
+{data_summary[:1000]}
+
+Generate 4 relevant questions users could ask:
+
+Questions:"""
+        
+        try:
+            response = self.groq_client.chat.completions.create(
+                model="llama-3.1-8b-instant",
+                messages=[
+                    {"role": "system", "content": "Generate specific questions based on actual data content."},
+                    {"role": "user", "content": suggestions_prompt}
+                ],
+                max_tokens=200,
+                temperature=0.3
+            )
+            
+            suggestions = response.choices[0].message.content
+            overview += f"**Try asking:**\n{suggestions}\n"
+        except:
+            overview += "**Try asking:**\n• Analyze the data\n• Show key insights\n"
         
         return ChatResponse(
             answer=overview,
             sources=list(files_data.keys())
         )
     
-    def _llm_generate_sql(self, question: str, schema_info: str) -> Optional[str]:
+    def _llm_generate_sql(self, question: str, schema_info: str, user_id: str) -> Optional[str]:
         """LLM generates SQL query with exploratory data discovery"""
         
         # Step 1: LLM explores data to understand what's available
@@ -230,14 +260,21 @@ Return only: SEMANTIC or STRUCTURED"""
         # Step 2: Generate final query based on exploration
         prompt = f"""Question: {question}
 
-Schema: {schema_info}
+Schema Information:
+{schema_info}
 
-Generate ONE complete SQLite SELECT statement only:
-- No WITH clauses, no multiple statements
-- Use datetime(start_date, '+365 days') for predictions
-- Return only a single SELECT query
+For delay prediction queries, include:
+- project_name (not COUNT)
+- incident counts per project
+- time variance or delay metrics
+- Show individual projects, not aggregated counts
 
-SQL:"""
+Example: SELECT project_name, COUNT(incidents) as incident_count, AVG(time_variance) as avg_delay FROM table GROUP BY project_name
+
+Generate SQLite query using exact table/column names from schema:
+{{"sql": "SELECT project_name, ... FROM table_name ..."}}
+
+Return only valid JSON:"""
 
         try:
             response = self.groq_client.chat.completions.create(
@@ -250,36 +287,31 @@ SQL:"""
                 temperature=0.1
             )
             
-            sql_query = response.choices[0].message.content.strip()
+            response_text = response.choices[0].message.content.strip()
             
-            # Clean up SQL - extract only the SQL statement
-            if "```" in sql_query:
-                sql_query = sql_query.replace("```sql", "").replace("```", "").strip()
+            # Extract JSON and get SQL
+            import json
+            import re
             
-            # Clean up multiple SELECT statements - keep only the first complete one
-            lines = sql_query.split('\n')
-            sql_lines = []
-            found_select = False
+            # Extract SQL directly from response - skip JSON parsing
+            sql_match = re.search(r'"sql"\s*:\s*"([^"]+)"', response_text, re.DOTALL)
+            if sql_match:
+                sql_query = sql_match.group(1)
+                print(f"Extracted SQL: {sql_query[:100]}...")
+            else:
+                # Fallback - look for SELECT statement
+                select_match = re.search(r'(SELECT[^;]+;?)', response_text, re.IGNORECASE | re.DOTALL)
+                if select_match:
+                    sql_query = select_match.group(1)
+                else:
+                    sql_query = response_text
+                print("Used fallback SQL extraction")
             
-            for line in lines:
-                line = line.strip()
-                if line.startswith('--'):  # Skip comments
-                    continue
-                if line and not line.startswith('The ') and not line.startswith('Here ') and not line.startswith('However'):
-                    if 'SELECT' in line.upper() and found_select:
-                        break  # Stop at second SELECT
-                    if 'SELECT' in line.upper():
-                        found_select = True
-                    sql_lines.append(line)
-            
-            sql_query = '\n'.join(sql_lines).strip()
-            
-            # Ensure proper termination
-            if not sql_query.endswith(';'):
-                sql_query += ';'
+            # Clean any remaining artifacts - no semicolon needed
+            sql_query = sql_query.strip().replace('```sql', '').replace('```', '').rstrip(';')
             
             # Validate SQL against actual schema
-            validated_sql = self._validate_and_fix_sql(sql_query, schema_info)
+            validated_sql = self._validate_and_fix_sql(sql_query, schema_info, user_id)
             
             print(f"Generated SQL after exploration: {validated_sql}")
             return validated_sql
@@ -297,26 +329,20 @@ SQL:"""
         exploration_results = "DATA EXPLORATION RESULTS:\n\n"
         
         try:
-            conn = sqlite3.connect(self.db_path)
-            
-            for query_desc, query in exploration_queries:
-                try:
-                    result_df = pd.read_sql_query(query, conn)
-                    
-                    exploration_results += f"{query_desc}:\n"
-                    if not result_df.empty:
-                        if len(result_df) <= 10:
-                            exploration_results += result_df.to_string(index=False) + "\n\n"
-                        else:
-                            exploration_results += result_df.head(10).to_string(index=False)
-                            exploration_results += f"\n... and {len(result_df) - 10} more rows\n\n"
-                    else:
-                        exploration_results += "No data found\n\n"
+            with sqlite3.connect(self.db_path) as conn:
+                for query_desc, query in exploration_queries:
+                    try:
+                        result_df = pd.read_sql_query(query, conn)
                         
-                except Exception as e:
-                    exploration_results += f"Query failed: {e}\n\n"
-            
-            conn.close()
+                        exploration_results += f"{query_desc}:\n"
+                        if not result_df.empty:
+                            # Limit to 5 rows to reduce token usage
+                            exploration_results += result_df.head(5).to_string(index=False) + "\n\n"
+                        else:
+                            exploration_results += "No data found\n\n"
+                            
+                    except Exception as e:
+                        exploration_results += f"Query failed: {e}\n\n"
             
         except Exception as e:
             exploration_results += f"Database connection failed: {e}\n"
@@ -353,7 +379,7 @@ SQL:"""
         
         return queries[:10]  # Limit exploration queries
     
-    def _validate_and_fix_sql(self, sql_query: str, schema_info: str) -> str:
+    def _validate_and_fix_sql(self, sql_query: str, schema_info: str, user_id: str) -> str:
         """Validate SQL against actual schema and fix if needed"""
         
         # Extract actual column names from schema
@@ -362,9 +388,8 @@ SQL:"""
         # Test the query first
         try:
             conn = sqlite3.connect(self.db_path)
-            # Try to execute with LIMIT 0 to check syntax without returning data
-            test_query = f"SELECT COUNT(*) FROM ({sql_query}) LIMIT 0"
-            conn.execute(test_query)
+            # Try to execute directly - pandas doesn't need semicolons
+            pd.read_sql_query(sql_query, conn, params=None)
             conn.close()
             
             # If successful, return original query
@@ -374,7 +399,7 @@ SQL:"""
             print(f"SQL validation failed: {e}")
             
             # If failed, let LLM fix it
-            return self._llm_fix_sql(sql_query, schema_info, str(e))
+            return self._llm_fix_sql(sql_query, schema_info, str(e), user_id)
     
     def _extract_actual_columns(self, schema_info: str) -> Dict[str, List[str]]:
         """Extract actual column names from schema info"""
@@ -402,22 +427,23 @@ SQL:"""
         
         return table_columns
     
-    def _llm_fix_sql(self, broken_sql: str, schema_info: str, error_message: str) -> str:
+    def _llm_fix_sql(self, broken_sql: str, schema_info: str, error_message: str, user_id: str) -> str:
         """LLM fixes broken SQL query"""
         
         prompt = f"""Fix this SQLite error:
 
 Broken SQL: {broken_sql}
 Error: {error_message}
-Schema: {schema_info}
 
-Fix for SQLite compatibility:
-- No INTERVAL syntax - use datetime() functions
-- No complex date arithmetic
-- Keep it simple - use basic SELECT
-- Return only corrected SQL:
+Schema Information:
+{schema_info}
 
-SQL:"""
+Look at the schema above and use ONLY the exact table and column names shown. Replace any incorrect names in the broken SQL.
+
+Return corrected SQL in JSON format:
+{{"sql": "corrected SELECT with exact names from schema"}}
+
+Return only valid JSON:"""
         
         try:
             response = self.groq_client.chat.completions.create(
@@ -430,33 +456,26 @@ SQL:"""
                 temperature=0.1
             )
             
-            fixed_sql = response.choices[0].message.content.strip()
+            response_text = response.choices[0].message.content.strip()
             
-            # Clean up SQL - extract only the SQL statement
-            if "```" in fixed_sql:
-                fixed_sql = fixed_sql.replace("```sql", "").replace("```", "").strip()
+            # Extract JSON and get SQL
+            import json
+            import re
             
-            # Clean up multiple SELECT statements - keep only the first complete one
-            lines = fixed_sql.split('\n')
-            sql_lines = []
-            found_select = False
+            # Extract SQL directly - skip JSON parsing
+            sql_match = re.search(r'"sql"\s*:\s*"([^"]+)"', response_text, re.DOTALL)
+            if sql_match:
+                fixed_sql = sql_match.group(1)
+            else:
+                # Fallback - look for SELECT statement
+                select_match = re.search(r'(SELECT[^;]+;?)', response_text, re.IGNORECASE | re.DOTALL)
+                if select_match:
+                    fixed_sql = select_match.group(1)
+                else:
+                    fixed_sql = response_text
             
-            for line in lines:
-                line = line.strip()
-                if line.startswith('--'):  # Skip comments
-                    continue
-                if line and not line.startswith('The ') and not line.startswith('Here ') and not line.startswith('However'):
-                    if 'SELECT' in line.upper() and found_select:
-                        break  # Stop at second SELECT
-                    if 'SELECT' in line.upper():
-                        found_select = True
-                    sql_lines.append(line)
-            
-            fixed_sql = '\n'.join(sql_lines).strip()
-            
-            # Ensure proper termination
-            if not fixed_sql.endswith(';'):
-                fixed_sql += ';'
+            # Clean SQL - no semicolon needed
+            fixed_sql = fixed_sql.strip().replace('```sql', '').replace('```', '').rstrip(';')
             
             print(f"LLM fixed SQL: {fixed_sql}")
             return fixed_sql
@@ -522,7 +541,8 @@ Return JSON: {{"query": "search terms", "top_k": 20}}"""
         
         # Clean and format data
         result_df = result_df.dropna(how='all')  # Remove completely empty rows
-        result_df = result_df.fillna('')  # Replace None/NaN with empty string
+        result_df = result_df.dropna()  # Remove rows with any NaN values
+        result_df = result_df.fillna('N/A')  # Replace remaining None/NaN with N/A
         
         # Format as markdown table (manual creation)
         def create_markdown_table(df):
@@ -541,23 +561,55 @@ Return JSON: {{"query": "search terms", "top_k": 20}}"""
             
             return '\n'.join([headers, separator] + rows)
         
-        # Format table
-        if len(result_df) <= 50:
+        # Generate contextual response
+        prompt = f"""Question: {question}
+
+Data:
+{result_df.to_string(index=False)}
+
+Write a brief, direct answer to the question using this data:
+
+Answer:"""
+        
+        try:
+            response = self.groq_client.chat.completions.create(
+                model="llama-3.1-8b-instant",
+                messages=[
+                    {"role": "system", "content": "Analyze data and provide insights. Focus on patterns, correlations, and actionable findings."},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=400,
+                temperature=0.1
+            )
+            
+            answer = response.choices[0].message.content
+            
+            # Only show table if data is meaningful (not mostly empty)
+            if len(result_df) > 0 and not result_df.empty:
+                table_md = create_markdown_table(result_df)
+                return f"{answer}\n\n{table_md}"
+            else:
+                return answer
+            
+        except Exception as e:
             table_md = create_markdown_table(result_df)
-            return f"## Query Results ({len(result_df)} records)\n\n{table_md}"
-        else:
-            table_md = create_markdown_table(result_df.head(50))
-            return f"## Query Results (showing first 50 of {len(result_df)} records)\n\n{table_md}\n\n*Total records: {len(result_df)}*"
+            # Filter out empty rows before showing table
+            if len(result_df) > 0:
+                table_md = create_markdown_table(result_df)
+                return f"Here are the results for your query:\n\n{table_md}"
+            else:
+                return "No meaningful data found for your query."
 
         # Direct return without LLM processing for faster, cleaner results
     
     def _llm_process_semantic_results(self, question: str, chunks: List[Dict]) -> str:
         """LLM processes semantic search results"""
         
-        # Build context from chunks
+        # Build context from chunks - summarize if too long
         context = ""
-        for i, chunk in enumerate(chunks[:10]):  # Limit context size
-            context += f"[{i+1}] From {chunk.get('file_name', 'Unknown')}:\n{chunk['content']}\n\n"
+        for i, chunk in enumerate(chunks[:5]):  # Reduced from 10 to 5
+            content = chunk['content'][:500]  # Limit chunk size
+            context += f"[{i+1}] {chunk.get('file_name', 'Unknown')}: {content}\n\n"
         
         # Let LLM process all semantic queries
         
@@ -605,52 +657,47 @@ Provide a brief, direct answer:"""
         return context
     
     def _get_detailed_schema(self, user_id: str) -> str:
-        """Get detailed schema with column mappings"""
+        """Get structured schema information for LLM"""
         
         tables = self._get_user_tables(user_id)
         if not tables:
             return ""
         
-        schema_info = ""
-        try:
-            conn = sqlite3.connect(self.db_path)
-            
-            for table in tables:
-                cursor = conn.cursor()
-                cursor.execute(f"PRAGMA table_info({table})")
-                columns = cursor.fetchall()
-                
-                cursor.execute(f"SELECT COUNT(*) FROM {table}")
-                row_count = cursor.fetchone()[0]
-                
-                schema_info += f"\nTable: {table} ({row_count} rows)\n"
-                
-                # Get column mappings if available
-                cursor.execute(
-                    "SELECT original_column, normalized_column, column_type, sample_values FROM column_mappings WHERE table_name = ?",
-                    (table,)
-                )
-                mappings = cursor.fetchall()
-                
-                if mappings:
-                    schema_info += "Columns (use normalized names in SQL):\n"
-                    for orig, norm, col_type, samples in mappings:
-                        schema_info += f"  - {norm} (was '{orig}', type: {col_type}, samples: {samples})\n"
-                else:
-                    schema_info += "Columns:\n"
-                    for col in columns:
-                        schema_info += f"  - {col[1]} (type: {col[2]})\n"
-                
-                # Add exact column names for SQL
-                column_names = [col[1] for col in columns]
-                schema_info += f"\nSQL COLUMN NAMES: {', '.join(column_names)}\n"
-            
-            conn.close()
-            
-        except Exception as e:
-            schema_info += f"Error getting schema: {e}\n"
+        schema_parts = []
         
-        return schema_info
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                
+                for table in tables:
+                    # Validate table name to prevent injection
+                    if not table.replace('_', '').replace(user_id, '').isalnum():
+                        continue
+                    
+                    cursor.execute(f"PRAGMA table_info({table})")
+                    columns = cursor.fetchall()
+                    
+                    cursor.execute(f"SELECT COUNT(*) FROM {table}")
+                    row_count = cursor.fetchone()[0]
+                    
+                    # Build concise schema info
+                    table_info = f"Table: {table} ({row_count} rows)"
+                    column_names = [col[1] for col in columns]
+                    table_info += f"\nColumns: {', '.join(column_names)}"
+                    
+                    # Add one sample row for context
+                    cursor.execute(f"SELECT * FROM {table} LIMIT 1")
+                    sample_row = cursor.fetchone()
+                    if sample_row:
+                        sample_dict = dict(zip(column_names, sample_row))
+                        table_info += f"\nSample: {sample_dict}"
+                    
+                    schema_parts.append(table_info)
+                
+        except Exception as e:
+            return f"Schema error: {e}"
+        
+        return "\n\n".join(schema_parts)
     
     def _get_user_tables(self, user_id: str) -> List[str]:
         """Get user's SQL tables"""
@@ -766,17 +813,13 @@ Provide a brief, direct answer:"""
         prompt = f"""Question: {question}
 Error: {error}
 
-Database Metadata:
+Metadata:
 {metadata}
 
 Sample Data:
 {sample_data}
 
-Generate simple SQLite-compatible SQL:
-- Use basic SELECT, WHERE, GROUP BY only
-- No INTERVAL, CASE statements, or complex functions
-- Use exact column names from metadata
-- Return only SQL:
+Read the metadata carefully and use the exact table and column names shown. Generate simple SQL:
 
 SQL:"""
         
@@ -800,9 +843,12 @@ SQL:"""
         except Exception as e:
             print(f"LLM analysis failed: {e}")
         
-        # Simple fallback
-        tables = self._get_user_tables(user_id)
-        return f"SELECT * FROM {tables[0]}" if tables else "SELECT 'No data' as message"
+        # Simple fallback - extract table name from metadata
+        import re
+        table_match = re.search(r'Table: (\S+)', metadata)
+        if table_match:
+            return f"SELECT * FROM {table_match.group(1)} LIMIT 10"
+        return "SELECT 'No data' as message"
     
     def _llm_fallback_analysis(self, question: str, user_id: str, error: str) -> ChatResponse:
         """Final fallback - LLM analyzes raw data without SQL"""
@@ -944,14 +990,14 @@ Answer:"""
             planned_end_date,
             completion_pct,
             status,
-            datetime(start_date, '+365 days') as simple_predicted_completion,
+            date('now', '+365 days') as simple_predicted_completion,
             CASE 
-                WHEN completion_pct LIKE '%100%' THEN 'Should be completed'
-                WHEN completion_pct LIKE '%0%' THEN 'Just started - 1 year estimate'
-                ELSE 'In progress - check planned date'
-            END as prediction_note
+                WHEN CAST(REPLACE(completion_pct, '%', '') AS INTEGER) >= 90 THEN 'Almost done - within 30 days'
+                WHEN CAST(REPLACE(completion_pct, '%', '') AS INTEGER) >= 80 THEN 'Nearing completion - 60 days'
+                ELSE date('now', '+90 days')
+            END as realistic_prediction
         FROM {tables[0]}
-        WHERE status LIKE '%Progress%' OR status LIKE '%progress%'
+        WHERE status IN ('In - Progress', 'In Progress')
         """
         
         try:

@@ -1,12 +1,12 @@
 {
-  "user_6gpfqedgp": {
+  "user_czkxuf2xp": {
     "Project Management Dataset.csv": {
       "data_type": "projects",
       "description": "Project management data",
       "key_fields": [
         {
-          "field": "Phase",
-          "description": "Phase information",
+          "field": "Complexity",
+          "description": "Complexity information",
           "sample_values": []
         },
         {
@@ -15,18 +15,18 @@
           "sample_values": []
         },
         {
-          "field": "Dependencies",
-          "description": "Dependencies information",
+          "field": "Region",
+          "description": "Region information",
           "sample_values": []
         },
         {
-          "field": "Department",
-          "description": "Department information",
+          "field": "M3",
+          "description": "M3 information",
           "sample_values": []
         },
         {
-          "field": "M4",
-          "description": "M4 information",
+          "field": "Year",
+          "description": "Year information",
           "sample_values": []
         }
       ],
@@ -41,28 +41,28 @@
       "description": "Project management data",
       "key_fields": [
         {
-          "field": "Rating",
-          "description": "Rating information",
-          "sample_values": []
-        },
-        {
-          "field": "Id",
-          "description": "Id information",
-          "sample_values": []
-        },
-        {
-          "field": "Name",
-          "description": "Name information",
-          "sample_values": []
-        },
-        {
           "field": "Phone",
           "description": "Phone information",
           "sample_values": []
         },
         {
-          "field": "Location",
-          "description": "Location information",
+          "field": "Capacity",
+          "description": "Capacity information",
+          "sample_values": []
+        },
+        {
+          "field": "Email",
+          "description": "Email information",
+          "sample_values": []
+        },
+        {
+          "field": "Score",
+          "description": "Score information",
+          "sample_values": []
+        },
+        {
+          "field": "Name",
+          "description": "Name information",
           "sample_values": []
         }
       ],
@@ -82,8 +82,8 @@
           "sample_values": []
         },
         {
-          "field": "Customer_Feedback_Score",
-          "description": "Customer_Feedback_Score information",
+          "field": "Opened_At",
+          "description": "Opened_At information",
           "sample_values": []
         },
         {
@@ -97,8 +97,8 @@
           "sample_values": []
         },
         {
-          "field": "01",
-          "description": "01 information",
+          "field": "Project_Name",
+          "description": "Project_Name information",
           "sample_values": []
         }
       ],
