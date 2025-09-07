@@ -86,6 +86,10 @@ class LocalVectorStore:
             print(f"No data found for user {user_id}")
             return []
         
+        # Special handling for wildcard search to check if user has any data
+        if query == "*":
+            return self.user_metadata[user_id][:top_k] if self.user_metadata[user_id] else []
+        
         # For large requests, return all data directly (faster)
         if top_k > 100:
             print(f"Returning all {len(self.user_metadata[user_id])} results directly")

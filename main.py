@@ -2,11 +2,19 @@ from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List
 from fastapi.staticfiles import StaticFiles
-from dotenv import load_dotenv
 import os
+from secure_config import SecureConfig
 
-# Load environment variables from .env file
-load_dotenv()
+# Load configuration from secure SQLite storage
+secure_config = SecureConfig()
+try:
+    config = secure_config.get_api_keys()
+    if not config.get('GROQ_API_KEY'):
+        raise Exception("No GROQ API key found in secure storage")
+except Exception as e:
+    print(f"Failed to load secure config: {e}")
+    print("Please run 'python run.py' first to set up API keys")
+    config = {}
 from models import ChatRequest, ChatResponse, CSVUpload
 from document_processor import DocumentProcessor
 from local_vector_store import LocalVectorStore
@@ -18,7 +26,7 @@ from two_stage_query_service import TwoStageQueryService
 from llm_driven_service import LLMDrivenService
 import uuid
 
-app = FastAPI(title="ProjectIQ", description="AI-Powered Project Management Assistant")
+app = FastAPI(title="DocuSight", description="AI-Powered Document Analysis Assistant")
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
@@ -105,6 +113,9 @@ async def upload_csv(file: UploadFile = File(...), user_id: str = Form(None)):
         chunks = doc_processor.process_file(content, user_id, file.filename)
         print(f"Created {len(chunks)} chunks from {file.filename}")
         
+        # Import DataChunk for SQL knowledge storage
+        from models import DataChunk
+        
         # Store in vector database
         try:
             vector_store.store_chunks(chunks)
@@ -126,12 +137,72 @@ async def upload_csv(file: UploadFile = File(...), user_id: str = Form(None)):
                 df = pd.read_csv(io.BytesIO(content))
                 print(f"Parsed CSV with {len(df)} rows and {len(df.columns)} columns")
                 
+                # Normalize column names for consistent SQL
+                original_columns = df.columns.tolist()
+                df.columns = df.columns.str.strip()  # Remove spaces
+                df.columns = df.columns.str.replace(' ', '_')  # Replace spaces with underscores
+                df.columns = df.columns.str.replace('-', '_')  # Replace hyphens
+                df.columns = df.columns.str.replace('%', '_pct')  # Replace % with _pct
+                df.columns = df.columns.str.replace('(', '').str.replace(')', '')  # Remove parentheses
+                df.columns = df.columns.str.replace('/', '_')  # Replace slashes
+                df.columns = df.columns.str.replace('#', 'num_')  # Replace # with num_
+                df.columns = df.columns.str.lower()  # Convert to lowercase
+                normalized_columns = df.columns.tolist()
+                
+                print(f"Column normalization: {dict(zip(original_columns, normalized_columns))}")
+                
                 # Store in SQL database
                 import sqlite3
                 conn = sqlite3.connect("local_data/structured_data.db")
                 table_name = f"{user_id}_{file.filename.replace('.csv', '').replace(' ', '_').replace('-', '_')}"
                 df.to_sql(table_name, conn, if_exists='replace', index=False)
+                
+                # Store column mapping for LLM reference
+                cursor = conn.cursor()
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS column_mappings (
+                        table_name TEXT,
+                        original_column TEXT,
+                        normalized_column TEXT,
+                        column_type TEXT,
+                        sample_values TEXT
+                    )
+                """)
+                
+                # Clear old mappings for this table
+                cursor.execute("DELETE FROM column_mappings WHERE table_name = ?", (table_name,))
+                
+                # Store new mappings
+                for orig, norm in zip(original_columns, normalized_columns):
+                    sample_vals = df[norm].dropna().head(3).astype(str).tolist()
+                    col_type = str(df[norm].dtype)
+                    cursor.execute(
+                        "INSERT INTO column_mappings VALUES (?, ?, ?, ?, ?)",
+                        (table_name, orig, norm, col_type, str(sample_vals))
+                    )
+                
+                conn.commit()
                 conn.close()
+                
+                # Store SQL knowledge in vector store
+                sql_examples = [
+                    f"SELECT * FROM {table_name}",
+                    f"SELECT COUNT(*) FROM {table_name}",
+                    f"SELECT {', '.join(normalized_columns[:5])} FROM {table_name}"
+                ]
+                
+                for sql in sql_examples:
+                    sql_chunk = DataChunk(
+                        content=f"SQL Query: {sql}\nTable: {table_name}\nColumns: {', '.join(normalized_columns)}",
+                        user_id=user_id,
+                        metadata={
+                            "file_name": f"{file.filename}_sql_knowledge",
+                            "type": "sql_reference",
+                            "table_name": table_name,
+                            "sql_query": sql
+                        }
+                    )
+                    chunks.append(sql_chunk)
                 
                 print(f"Stored {file.filename} as SQL table {table_name}")
                 

@@ -9,7 +9,16 @@ import json
 class IntelligentQueryService:
     def __init__(self):
         self.vector_store = LocalVectorStore()
-        self.groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+        try:
+            from secure_config import SecureConfig
+            config = SecureConfig().get_api_keys()
+            groq_key = config.get("GROQ_API_KEY")
+            if groq_key:
+                self.groq_client = Groq(api_key=groq_key)
+            else:
+                self.groq_client = None
+        except:
+            self.groq_client = None
         self.schema_analyzer = SchemaAnalyzer()
     
     def process_query(self, question: str, user_id: str) -> ChatResponse:

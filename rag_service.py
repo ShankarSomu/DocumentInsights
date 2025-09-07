@@ -10,7 +10,16 @@ import os
 class RAGService:
     def __init__(self):
         self.vector_store = LocalVectorStore()
-        self.groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+        try:
+            from secure_config import SecureConfig
+            config = SecureConfig().get_api_keys()
+            groq_key = config.get("GROQ_API_KEY")
+            if groq_key:
+                self.groq_client = Groq(api_key=groq_key)
+            else:
+                self.groq_client = None
+        except:
+            self.groq_client = None
         self.schema_analyzer = SchemaAnalyzer()
         self.intelligent_service = IntelligentQueryService()
         self.query_router = QueryRouter()
@@ -93,19 +102,32 @@ class RAGService:
         context = self._build_context(relevant_chunks)
         
         # Generate answer using Groq
+        if not self.groq_client:
+            return ChatResponse(
+                answer="LLM service not available. Please check API key configuration.",
+                sources=list(set([chunk.get('file_name', 'Unknown') for chunk in relevant_chunks]))
+            )
+        
         prompt = self._build_prompt(question, context)
         
         response = self.groq_client.chat.completions.create(
             model="llama-3.1-8b-instant",
             messages=[
-                {"role": "system", "content": "You are a project management assistant. Answer questions based only on the provided data context. Be concise and data-driven."},
+                {"role": "system", "content": "You are a concise data analyst. Provide brief, direct answers using tables or bullet points. Avoid lengthy explanations."},
                 {"role": "user", "content": prompt}
             ],
-            max_tokens=500,
+            max_tokens=200,
             temperature=0.1
         )
         
         answer = response.choices[0].message.content
+        
+        # Add follow-up suggestions
+        from followup_generator import generate_followup_suggestions
+        followups = generate_followup_suggestions(question, relevant_chunks)
+        if followups:
+            answer += "\n\n**Try asking:**\n" + "\n".join([f"• {q}" for q in followups])
+        
         sources = [chunk.get('file_name', 'Unknown') for chunk in relevant_chunks]
         
         return ChatResponse(answer=answer, sources=list(set(sources)))
@@ -138,12 +160,12 @@ class RAGService:
         return context
     
     def _build_prompt(self, question: str, context: str) -> str:
-        return f"""Based on the following project data, answer this question: {question}
+        return f"""Answer concisely: {question}
 
-Data Context:
+Data:
 {context}
 
-Answer:"""
+Provide a brief, direct answer with key numbers/facts only:"""
     
     def _process_with_llm(self, question: str, all_chunks: List[Dict], user_id: str) -> ChatResponse:
         """Use LLM intelligence to process queries with schema awareness"""
@@ -175,36 +197,28 @@ Answer:"""
         context = self._build_context(sampled_chunks)
         
         # Create intelligent prompt with schema awareness
-        prompt = f"""You have access to project management data from multiple files:
+        prompt = f"""Answer this question concisely using the data provided: {question}
 
-{schema_context}
-
-User Question: {question}
-
-Data Sample:
+Data:
 {context}
 
-Please extract ONLY the actual project names (not field labels, descriptions, or other metadata). 
-Provide a clean, numbered list of unique project names and indicate which file each came from.
-
-Format:
-1. Project Name (from filename.csv)
-2. Another Project (from filename.csv)
-
-Be selective - only include actual project names, not field values like costs, descriptions, or status updates."""
+Provide a brief, direct answer. Use tables or bullet points for clarity. Avoid lengthy explanations."""
         
         try:
-            response = self.groq_client.chat.completions.create(
-                model="llama-3.1-8b-instant",
-                messages=[
-                    {"role": "system", "content": "You are a project management assistant. Extract only actual project names from the data, not field labels or metadata. Be precise and selective."},
-                    {"role": "user", "content": prompt}
-                ],
-                max_tokens=800,
-                temperature=0.1
-            )
-            
-            answer = response.choices[0].message.content
+            if not self.groq_client:
+                answer = "LLM service not available for processing this query."
+            else:
+                response = self.groq_client.chat.completions.create(
+                    model="llama-3.1-8b-instant",
+                    messages=[
+                        {"role": "system", "content": "You are a concise data analyst. Provide brief, direct answers. Use bullet points or tables."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    max_tokens=300,
+                    temperature=0.1
+                )
+                
+                answer = response.choices[0].message.content
             
             # Add info about data completeness
             if len(all_chunks) > len(sampled_chunks):
@@ -287,6 +301,12 @@ Be selective - only include actual project names, not field values like costs, d
             answer += "\n\n*Note: No specific risk information found in the data.*"
         else:
             answer = "No projects or risk information found in the uploaded data."
+        
+        # Add follow-up suggestions
+        from followup_generator import generate_followup_suggestions
+        followups = generate_followup_suggestions(question, chunks)
+        if followups:
+            answer += "\n\n**Try asking:**\n" + "\n".join([f"• {q}" for q in followups])
         
         sources = list(set([chunk.get('file_name', 'Unknown') for chunk in chunks]))
         return ChatResponse(answer=answer, sources=sources)

@@ -11,7 +11,13 @@ class HybridService:
         if self.use_cloud:
             try:
                 from groq import Groq
-                self.groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+                from secure_config import SecureConfig
+                config = SecureConfig().get_api_keys()
+                groq_key = config.get("GROQ_API_KEY")
+                if groq_key:
+                    self.groq_client = Groq(api_key=groq_key)
+                else:
+                    self.groq_client = None
                 print("Using Groq cloud LLM (fast)")
             except:
                 print("Groq not available, falling back to local processing")

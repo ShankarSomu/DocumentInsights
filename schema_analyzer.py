@@ -5,7 +5,16 @@ from groq import Groq
 
 class SchemaAnalyzer:
     def __init__(self):
-        self.groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+        try:
+            from secure_config import SecureConfig
+            config = SecureConfig().get_api_keys()
+            groq_key = config.get("GROQ_API_KEY")
+            if groq_key:
+                self.groq_client = Groq(api_key=groq_key)
+            else:
+                self.groq_client = None
+        except:
+            self.groq_client = None
         self.schema_file = "local_data/data_schemas.json"
         os.makedirs("local_data", exist_ok=True)
     

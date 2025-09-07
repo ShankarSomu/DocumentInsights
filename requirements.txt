@@ -11,3 +11,6 @@ python-dotenv
 faiss-cpu
 numpy
 ollama
+cryptography
+groq
+keyring

@@ -3,48 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ProjectIQ - AI Assistant</title>
+    <title>DocuSight - AI Assistant</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism.min.css" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #f8fafc;
             min-height: 100vh;
+            margin: 0;
+            padding: 0;
         }
-        .container { max-width: 1200px; margin: 0 auto; padding: 20px; height: 100vh; display: flex; flex-direction: column; }
+        .container { width: 100%; height: 100vh; display: flex; flex-direction: column; }
         .header {
-            background: rgba(255,255,255,0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 20px;
-            text-align: center;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
+        .header h1 { color: #2d3748; font-size: 1.5rem; margin: 0; }
+        .header p { color: #718096; font-size: 0.9rem; margin: 0; }
         .header h1 { color: #2d3748; font-size: 2rem; margin-bottom: 5px; }
         .header p { color: #718096; font-size: 1rem; }
         .main-content {
             display: flex;
-            gap: 20px;
             flex: 1;
             min-height: 0;
         }
         .sidebar {
-            width: 300px;
-            background: rgba(255,255,255,0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            width: 320px;
+            background: white;
+            border-right: 1px solid #e2e8f0;
+            padding: 24px;
+            overflow-y: auto;
         }
         .chat-container {
             flex: 1;
-            background: rgba(255,255,255,0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            background: white;
             display: flex;
             flex-direction: column;
         }
@@ -90,10 +89,11 @@
         .chat-messages {
             flex: 1;
             overflow-y: auto;
-            padding: 20px;
+            padding: 24px;
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 20px;
+            width: 100%;
         }
         .message {
             display: flex;
@@ -122,7 +122,7 @@
             color: white;
         }
         .message-content {
-            max-width: 70%;
+            max-width: 85%;
             padding: 12px 16px;
             border-radius: 12px;
             line-height: 1.5;
@@ -193,6 +193,22 @@
             border-radius: 4px;
             font-family: 'Courier New', monospace;
         }
+        .clickable-prompt {
+            background: #e6f3ff;
+            border: 1px solid #4299e1;
+            border-radius: 6px;
+            padding: 8px 12px;
+            margin: 4px 0;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-block;
+            color: #2b6cb0;
+            font-size: 0.9rem;
+        }
+        .clickable-prompt:hover {
+            background: #bee3f8;
+            border-color: #3182ce;
+        }
         .message-content pre {
             background: rgba(0,0,0,0.05);
             padding: 12px;
@@ -201,8 +217,9 @@
             margin: 8px 0;
         }
         .input-section {
-            padding: 20px;
+            padding: 24px;
             border-top: 1px solid #e2e8f0;
+            width: 100%;
         }
         .input-group {
             display: flex;
@@ -308,17 +325,55 @@
             width: 0%;
             transition: width 0.3s ease;
         }
+        .welcome-message {
+            text-align: center;
+            padding: 60px 20px;
+            color: #4a5568;
+        }
+        .welcome-message h2 {
+            font-size: 2rem;
+            margin-bottom: 16px;
+            color: #2d3748;
+        }
+        .welcome-message p {
+            font-size: 1.1rem;
+            margin-bottom: 32px;
+            line-height: 1.6;
+        }
+        .capabilities {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 32px;
+        }
+        .capability {
+            background: #f7fafc;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+        }
+        .capability h3 {
+            color: #2d3748;
+            margin-bottom: 8px;
+            font-size: 1.1rem;
+        }
+        .capability p {
+            color: #718096;
+            font-size: 0.9rem;
+            margin: 0;
+        }
         @media (max-width: 768px) {
             .main-content { flex-direction: column; }
-            .sidebar { width: 100%; }
+            .sidebar { width: 100%; border-right: none; border-bottom: 1px solid #e2e8f0; }
+            .chat-messages, .input-section { padding: 16px; }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1><i class="fas fa-robot"></i> ProjectIQ</h1>
-            <p>AI-Powered Project Management Assistant</p>
+            <h1><i class="fas fa-eye"></i> DocuSight</h1>
+            <p>AI-Powered Document Analysis Assistant</p>
         </div>
         
         <div class="main-content">
@@ -401,8 +456,33 @@
         let uploadedFiles = [];
         updateFileList();
         
-        // Show session info to user
-        addMessage('🆕 **New Session Started**\n\nSession ID: `' + userId.substring(0, 8) + '...`\n\nUpload your files to get started!', 'bot');
+        // Show welcome message
+        showWelcomeMessage();
+        
+        function showWelcomeMessage() {
+            const messagesContainer = document.getElementById('chatMessages');
+            messagesContainer.innerHTML = `
+                <div class="welcome-message">
+                    <h2>👋 Welcome to DocuSight!</h2>
+                    <p>Your AI-powered document analysis assistant. Upload your files and start asking questions about your data.</p>
+                    
+                    <div class="capabilities">
+                        <div class="capability">
+                            <h3>📊 Data Analysis</h3>
+                            <p>Analyze CSV, Excel files with intelligent queries and get insights from your structured data.</p>
+                        </div>
+                        <div class="capability">
+                            <h3>📄 Document Search</h3>
+                            <p>Search through PDFs, Word docs, presentations to find specific information quickly.</p>
+                        </div>
+                        <div class="capability">
+                            <h3>🤖 Smart Insights</h3>
+                            <p>Get summaries, trends, and answers to complex questions about your uploaded content.</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
 
         function generateUserId() {
             return 'user_' + Math.random().toString(36).substr(2, 9);
@@ -449,6 +529,11 @@
                     showStatus(`Successfully uploaded ${successCount}/${files.length} file(s)! ${totalChunks} chunks created.`, 'success');
                     fileInput.value = '';
                     updateFileList();
+                    
+                    // Show data capabilities message
+                    if (document.querySelector('.welcome-message')) {
+                        showDataUploadedMessage();
+                    }
                 } else {
                     showStatus('All uploads failed. Please try again.', 'error');
                 }
@@ -740,7 +825,9 @@
                 .replace(/<details>([\s\S]*?)<\/details>/g, function(match, content) {
                     return match; // Keep as-is, already HTML
                 })
-                // Lists (bullet points)
+                // Clickable prompts (bullet points starting with quotes)
+                .replace(/^[•\-\*] "([^"]+)"$/gm, '<div class="clickable-prompt" onclick="sendClickablePrompt(\'$1\')">• "$1"</div>')
+                // Regular lists (bullet points)
                 .replace(/^[•\-\*] (.*)$/gm, '<li>$1</li>')
                 // Line breaks
                 .replace(/\n/g, '<br>');
@@ -811,12 +898,25 @@
             }
         }
         
+        function showDataUploadedMessage() {
+            const messagesContainer = document.getElementById('chatMessages');
+            messagesContainer.innerHTML = '';
+            
+            addMessage(`🎉 **Great! Your data is ready for analysis.**\n\n**What I can help you with:**\n\n• **Ask questions** about your data ("How many projects are high risk?")\n• **Get summaries** ("Summarize the main findings")\n• **Find specific information** ("Show me the project charter for X")\n• **Analyze trends** ("What are the common issues?")\n• **Compare data** ("Which department has the most employees?")\n\n**Try asking:**\n• "What data do I have?"\n• "Show me a summary of my files"\n• "List all projects"`, 'bot');
+        }
+        
         function formatFileSize(bytes) {
             if (bytes === 0) return '0 B';
             const k = 1024;
             const sizes = ['B', 'KB', 'MB', 'GB'];
             const i = Math.floor(Math.log(bytes) / Math.log(k));
             return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        }
+        
+        function sendClickablePrompt(prompt) {
+            const input = document.getElementById('messageInput');
+            input.value = prompt;
+            sendMessage();
         }
 
         // Session info is now shown above instead of welcome message

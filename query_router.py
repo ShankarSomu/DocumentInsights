@@ -4,7 +4,16 @@ import os
 
 class QueryRouter:
     def __init__(self):
-        self.groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+        try:
+            from secure_config import SecureConfig
+            config = SecureConfig().get_api_keys()
+            groq_key = config.get("GROQ_API_KEY")
+            if groq_key:
+                self.groq_client = Groq(api_key=groq_key)
+            else:
+                self.groq_client = None
+        except:
+            self.groq_client = None
     
     def route_query(self, question: str, available_files: List[str]) -> Dict:
         """Route query to appropriate file(s) and determine query type"""
