@@ -1,17 +1,12 @@
 {
-  "user_czkxuf2xp": {
+  "user_vjgvdfnig": {
     "Project Management Dataset.csv": {
       "data_type": "projects",
       "description": "Project management data",
       "key_fields": [
         {
-          "field": "Complexity",
-          "description": "Complexity information",
-          "sample_values": []
-        },
-        {
-          "field": "Risks",
-          "description": "Risks information",
+          "field": "Phase",
+          "description": "Phase information",
           "sample_values": []
         },
         {
@@ -25,44 +20,13 @@
           "sample_values": []
         },
         {
-          "field": "Year",
-          "description": "Year information",
-          "sample_values": []
-        }
-      ],
-      "common_queries": [
-        "List all projects",
-        "Show projects details"
-      ],
-      "query_instructions": "Look for projects information in the data"
-    },
-    "employee_data_pyramid.csv": {
-      "data_type": "projects",
-      "description": "Project management data",
-      "key_fields": [
-        {
-          "field": "Phone",
-          "description": "Phone information",
+          "field": "Cost",
+          "description": "Cost information",
           "sample_values": []
         },
         {
-          "field": "Capacity",
-          "description": "Capacity information",
-          "sample_values": []
-        },
-        {
-          "field": "Email",
-          "description": "Email information",
-          "sample_values": []
-        },
-        {
-          "field": "Score",
-          "description": "Score information",
-          "sample_values": []
-        },
-        {
-          "field": "Name",
-          "description": "Name information",
+          "field": "Variance",
+          "description": "Variance information",
           "sample_values": []
         }
       ],
@@ -77,28 +41,64 @@
       "description": "Project management data",
       "key_fields": [
         {
-          "field": "Root_Cause_Category",
-          "description": "Root_Cause_Category information",
+          "field": "01",
+          "description": "01 information",
+          "sample_values": []
+        },
+        {
+          "field": "Project_Name",
+          "description": "Project_Name information",
+          "sample_values": []
+        },
+        {
+          "field": "Closed_At",
+          "description": "Closed_At information",
+          "sample_values": []
+        },
+        {
+          "field": "Customer_Feedback_Score",
+          "description": "Customer_Feedback_Score information",
           "sample_values": []
         },
         {
           "field": "Opened_At",
           "description": "Opened_At information",
           "sample_values": []
-        },
+        }
+      ],
+      "common_queries": [
+        "List all projects",
+        "Show projects details"
+      ],
+      "query_instructions": "Look for projects information in the data"
+    },
+    "employee_data_pyramid.csv": {
+      "data_type": "projects",
+      "description": "Project management data",
+      "key_fields": [
         {
-          "field": "Reassignment_History",
-          "description": "Reassignment_History information",
+          "field": "Id",
+          "description": "Id information",
           "sample_values": []
         },
         {
-          "field": "Severity_Priority",
-          "description": "Severity_Priority information",
+          "field": "Phone",
+          "description": "Phone information",
           "sample_values": []
         },
         {
-          "field": "Project_Name",
-          "description": "Project_Name information",
+          "field": "Designation",
+          "description": "Designation information",
+          "sample_values": []
+        },
+        {
+          "field": "Assignment",
+          "description": "Assignment information",
+          "sample_values": []
+        },
+        {
+          "field": "Email",
+          "description": "Email information",
           "sample_values": []
         }
       ],
